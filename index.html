@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tltv protocol</title>
+  <meta name="description" content="a federation protocol for open television channels.">
+  <meta property="og:title" content="tltv">
+  <meta property="og:description" content="protocol for an open tv channel network.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://timelooptv.org">
+  <meta name="theme-color" content="#111">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://timelooptv.org">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="tltv">
+  <meta name="twitter:description" content="protocol for an open tv channel network.">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "tltv",
+    "alternateName": "Time Loop TV",
+    "description": "a federation protocol for open television channels.",
+    "url": "https://timelooptv.org",
+    "applicationCategory": "MultimediaApplication",
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "https://github.com/tltv-org",
+    "author": {
+      "@type": "Organization",
+      "name": "tltv",
+      "url": "https://github.com/tltv-org"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="hero">
+    <h1>tltv</h1>
+    <p class="tagline">protocol for an open tv channel network.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://demo.timelooptv.org">watch the demo</a>
+      <a class="btn btn-secondary" href="https://spec.timelooptv.org">read the spec</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="story">
+      <div class="step">
+        <h2>a key.</h2>
+        <p>generate an Ed25519 key pair. that's your channel.
+           no signup, no platform, no permission needed.</p>
+      </div>
+      <div class="step">
+        <h2>a link.</h2>
+        <p>your key becomes a <code>tltv://</code> address on the network.
+           share it anywhere. the protocol handles discovery,
+           federation, and relay.</p>
+      </div>
+      <div class="step">
+        <h2>a stream.</h2>
+        <p>that link resolves to standard HLS video. any browser,
+           any player, no app required. open protocol,
+           fully open source.</p>
+      </div>
+    </section>
+
+    <section class="build">
+      <h2>build</h2>
+      <div class="build-links">
+        <a href="https://spec.timelooptv.org">spec</a>
+        <a href="https://github.com/tltv-org">github</a>
+      </div>
+      <ul class="repos">
+        <li><a href="https://github.com/tltv-org/protocol">protocol</a> &mdash; federation spec, test vectors, reference implementation</li>
+        <li><a href="https://github.com/tltv-org/cathode">cathode</a> &mdash; reference server (GStreamer, HLS, federation)</li>
+        <li><a href="https://github.com/tltv-org/phosphor">phosphor</a> &mdash; web client (stream viewer + control panel)</li>
+        <li><a href="https://github.com/tltv-org/cli">cli</a> &mdash; command-line tools (identity, signing, bridge, relay, origin server)</li>
+        <li><a href="https://github.com/tltv-org/examples">examples</a> &mdash; minimal server + relay implementations</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <span>MIT License</span>
+    <a href="manifesto.html">manifesto</a>
+    <a href="https://github.com/tltv-org">GitHub</a>
+  </footer>
+
+</body>
+</html>
