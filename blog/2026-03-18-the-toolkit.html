@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>tltv — hello world</title>
-  <meta name="description" content="tltv is open source.">
-  <meta property="og:title" content="tltv — hello world">
-  <meta property="og:description" content="tltv is open source.">
+  <title>tltv — the toolkit</title>
+  <meta name="description" content="I needed to prove the spec actually worked.">
+  <meta property="og:title" content="tltv — the toolkit">
+  <meta property="og:description" content="I needed to prove the spec actually worked.">
   <meta property="og:type" content="article">
-  <meta property="og:url" content="https://timelooptv.org/blog/2026-03-16-hello-world">
-  <meta property="article:published_time" content="2026-03-16">
+  <meta property="og:url" content="https://timelooptv.org/blog/2026-03-18-the-toolkit">
+  <meta property="article:published_time" content="2026-03-18">
   <meta name="theme-color" content="#111">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="canonical" href="https://timelooptv.org/blog/2026-03-16-hello-world">
+  <link rel="canonical" href="https://timelooptv.org/blog/2026-03-18-the-toolkit">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="tltv — hello world">
-  <meta name="twitter:description" content="tltv is open source.">
+  <meta name="twitter:title" content="tltv — the toolkit">
+  <meta name="twitter:description" content="I needed to prove the spec actually worked.">
   <meta property="og:image" content="https://timelooptv.org/og-image.png">
   <meta name="twitter:image" content="https://timelooptv.org/og-image.png">
   <link rel="stylesheet" href="/style.css">
@@ -24,33 +24,32 @@
 
   <header class="hero hero-compact">
     <h1><a href="/" class="home-link">tltv</a></h1>
-    <p class="tagline"><a href="/blog" class="home-link">hello world</a></p>
+    <p class="tagline"><a href="/blog" class="home-link">the toolkit</a></p>
   </header>
 
   <main>
     <section class="prose">
-      <p class="post-date">2026-03-16</p>
-<p>the idea for tltv has been around since 2015 when a beach restaurant
-asked me to set up a 24/7 channel of surf videos playing on a loop in
-all of their restaurants. naturally I didn’t want to drive to each
-restaurant with a thumb drive so I started the basic research and
-couldn’t find an easy solution. I dropped it but the challenge scratched
-an itch I haven’t felt since the days of my weekly high school news
-show.</p>
-<p>fast forward to 2020. I found myself with a lot of time on my hands.
-started doing some real research with ffmpeg and gstreamer. always got
-frustrated trying to turn ffmpeg into a server and making gstreamer as
-easy as ffmpeg.</p>
-<p>went through 8 different iterations over the years. it wasn’t until
-2026 when it finally clicked.</p>
-<p>start with the protocol.</p>
-<p>I poured all my notes into the spec and didn’t look back. once I had
-the spec, it was easy to create the apps.</p>
-<p>so <a href="https://spec.timelooptv.org">here it is</a>. generate a
-key, start a stream, get an address. that’s your channel. no signup, no
-platform. other nodes on the network can relay your channel without
-asking. signatures keep everything verifiable.</p>
-<p>“there you are — electronic television.”</p>
+      <p class="post-date">2026-03-18</p>
+<p>two days after publishing the spec I needed to prove it worked. not a
+server. just a tool that could exercise every part of the protocol and
+tell me if something was broken.</p>
+<p>keygen. sign. verify. resolve a URI. crawl the gossip layer and map
+every node it finds. probe a channel and pull its metadata. every
+protocol operation got a command. 67 tests against all 7 test vector
+suites. if the tests pass, the spec works.</p>
+<p>I picked go for one reason. single static binary. no runtime, no
+dependencies, no installer. cross-compile for seven platforms from one
+codebase and ship.</p>
+<p>there’s a vanity miner in there too. every channel ID starts with TV.
+that’s the version bytes. but you can brute-force keys until the rest
+spells something. mine says TVLoop. took about ten minutes. purely
+cosmetic but I like it.</p>
+<p>I had cathode half-built at this point. the server. kept hitting
+walls with the UI and the API layer. the CLI was simpler. small scope,
+one command at a time, tests that either pass or don’t. it became the
+place where progress actually happened.</p>
+<p>if you want a sneak preview of what this toolkit became, <a
+href="https://github.com/tltv-org/cli">here it is</a>.</p>
 <p>— pfarnsworth</p>
     </section>
   </main>
