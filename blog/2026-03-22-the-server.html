@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tltv — the server</title>
+  <meta name="description" content="the part where I stopped fighting ffmpeg.">
+  <meta property="og:title" content="tltv — the server">
+  <meta property="og:description" content="the part where I stopped fighting ffmpeg.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://timelooptv.org/blog/2026-03-22-the-server">
+  <meta property="article:published_time" content="2026-03-22">
+  <meta name="theme-color" content="#111">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="canonical" href="https://timelooptv.org/blog/2026-03-22-the-server">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="tltv — the server">
+  <meta name="twitter:description" content="the part where I stopped fighting ffmpeg.">
+  <meta property="og:image" content="https://timelooptv.org/og-image.png">
+  <meta name="twitter:image" content="https://timelooptv.org/og-image.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <header class="hero hero-compact">
+    <h1><a href="/" class="home-link">tltv</a></h1>
+    <p class="tagline"><a href="/blog" class="home-link">the server</a></p>
+  </header>
+
+  <main>
+    <section class="prose">
+      <p class="post-date">2026-03-22</p>
+<p>version eight from the last post was the monolith that worked. when I
+split it up, the server got a name. cathode. seemed fitting.</p>
+<p>what cathode does is playout. take sources in, keep a stream running,
+never let it go down. sounds simple. it’s the hardest problem in live
+streaming.</p>
+<p>casparCG has been the gold standard for 20 years. swedish public
+television built it, european broadcasters run it daily. it solved
+playout by pre-loading the next clip in the background while the current
+one plays and auto-transitioning when it finishes. obs can do it too but
+you need a full desktop environment. I don’t want to run a vm with a gui
+just to keep a stream alive. I wanted headless. I wanted docker. I
+wanted something I could deploy and forget.</p>
+<p>I tried for years to build the full stack. ui, api, admin panel,
+scheduling, content management, playout engine. all at once. it took
+many restarts to realize I needed to strip everything down and focus on
+the core tech. and the core tech is the switch.</p>
+<p>the stream must never go down. never. in 24/7 streaming the output
+encoder runs continuously. the question is how do you change what’s
+feeding it without killing it.</p>
+<p>ffplayout solved it with named pipes and multiple ffmpeg processes. I
+tried that. obs solved it with scenes. voctomix solved it with a
+gstreamer compositor.</p>
+<p>I used voctomix in the second rewrite. that’s where I first saw
+interpipeline communication. separate gstreamer pipelines connected
+through shared memory. the pattern stuck with me even after voctomix
+didn’t work out. every time ffplayout finished a clip and started the
+next one, voctocore saw a source disconnect and threw up its failsafe
+screen. so every clip transition was a flash of the failsafe. not great
+for 24/7.</p>
+<p>cathode runs each source in its own isolated gstreamer pipeline. four
+by default. failover, two content inputs, and a blinder. they connect to
+a central mixer through shared memory. if a source crashes, the mixer
+keeps going. you switch inputs by changing compositor properties. the
+pipeline never stops.</p>
+<p>that solves the switch. but there’s a harder problem hiding behind
+it.</p>
+<p>people have been asking about gapless playlist playback in gstreamer
+<a
+href="https://discourse.gstreamer.org/t/gapless-playback-with-playbin3/385">for
+years</a>. as recently as <a
+href="https://discourse.gstreamer.org/t/gapless-playback-with-multiple-uridecodebin3-elements-in-a-pipeline/4566">may
+2025</a> a gstreamer core developer suggested the exact interpipeline
+architecture cathode uses but didn’t address how to make playlist
+transitions seamless within it. <a
+href="https://raw.githubusercontent.com/GStreamer/gstreamer/main/subprojects/gst-docs/markdown/additional/design/playback-gapless.md">gstreamer’s
+own design docs</a> acknowledge what they call the “snowball problem.”
+as far as I can tell, nobody had documented a working solution.</p>
+<p>here’s the problem. when you’re playing files through interpipeline
+shared memory, there’s nothing constraining how fast the decoder runs.
+gstreamer’s about-to-finish signal fires when the file is done being
+read, not when it’s done being displayed. for a local file that can be
+less than a second. so the signal fires, the next clip loads, its signal
+fires immediately, the next one loads. clips cascade into each
+other.</p>
+<p>raw uridecodebin3 in the interpipeline. about-to-finish cascades.
+clips skip.</p>
+<p>concat element. works for hours then runs out of memory. elements
+accumulate and never get cleaned up. oom killer took it down at 24gb
+after about 15 hours.</p>
+<p>per-clip pipeline rebuild. two-frame black gap on every transition.
+66 milliseconds of nothing. visible.</p>
+<p>clocksync element to constrain the decode rate. deadlocks during
+gstreamer preroll. pipeline never reaches playing state.</p>
+<p>tee and fakesink with raw uridecodebin3. no playsink backpressure.
+about-to-finish still fires wrong.</p>
+<p>hot-swapping elements in a running pipeline. timestamp misalignment.
+audio and video drift apart.</p>
+<p>the fix was playbin3 with custom sink bins. playbin3 wraps
+uridecodebin3 with playsink, which gives you backpressure control. I
+built custom video and audio sink bins with a tee splitting to two
+outputs. one branch goes to a fakesink with sync=true, which provides
+the real-time clock reference. the other branch goes to intervideosink,
+which feeds the mixer. the fakesink creates backpressure that propagates
+upstream through playsink all the way back to uridecodebin3.
+about-to-finish finally fires at the right wall-clock time. the next
+clip pre-rolls. seamless transition. no black frames.</p>
+<p>the switch problem and the gapless playlist problem. those were the
+two walls. cathode got past both of them. 31 tests making sure they stay
+solved.</p>
+<p>— pfarnsworth</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-left">
+      <a href="/" class="footer-mark" aria-label="home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 491.322 349.774" width="20" height="14"><g transform="translate(-0.177,349.812) scale(0.1,-0.1)" fill="currentColor" stroke="none"><path d="M2050 3493 c-881 -31 -1492 -102 -1671 -194 -95 -48 -171 -145 -214 -272 -98 -292 -154 -705 -162 -1192 -8 -497 27 -842 127 -1233 48 -187 74 -246 140 -316 96 -102 195 -137 505 -181 756 -105 1734 -133 2665 -75 330 21 800 78 959 117 195 47 311 159 370 358 52 179 98 442 128 735 24 242 24 784 0 1030 -40 397 -116 746 -191 874 -34 58 -117 133 -179 161 -243 111 -1187 198 -2092 193 -170 -1 -344 -3 -385 -5z m-246 -993 c33 -5 92 -25 132 -44 68 -32 101 -64 609 -571 296 -295 547 -543 559 -550 17 -11 80 -15 299 -15 392 -2 361 -37 365 410 3 365 0 389 -57 427 -33 23 -39 23 -303 23 -177 0 -277 -4 -291 -11 -12 -6 -95 -84 -185 -172 l-162 -162 -113 113 -112 112 170 170 c178 178 221 211 320 250 57 22 75 24 326 28 170 2 293 0 340 -7 193 -30 343 -175 378 -365 14 -76 15 -704 1 -777 -15 -79 -67 -177 -124 -235 -58 -57 -156 -109 -235 -124 -70 -13 -552 -13 -622 0 -30 5 -85 26 -124 45 -64 31 -111 75 -580 545 -280 282 -532 529 -558 551 l-49 39 -278 0 -278 0 -30 -25 c-52 -43 -53 -53 -50 -424 l3 -343 37 -34 c22 -20 49 -35 65 -35 100 -6 532 5 548 13 11 6 92 82 180 169 l160 159 113 -113 112 -113 -183 -182 c-262 -260 -269 -262 -677 -262 -141 0 -281 5 -311 10 -170 32 -310 164 -355 335 -10 37 -14 143 -14 423 0 351 1 376 21 434 52 156 176 269 332 303 75 16 530 20 621 5z"/></g></svg>
+      </a>
+      <a href="https://demo.timelooptv.org">demo</a>
+      <a href="https://spec.timelooptv.org">spec</a>
+      <a href="https://github.com/tltv-org">github</a>
+      <span class="footer-sep">|</span>
+      <a href="/blog">blog</a>
+      <a href="/manifesto">manifesto</a>
+    </div>
+    <div class="footer-right">
+      <a href="/license">MIT License</a>
+    </div>
+  </footer>
+
+</body>
+</html>
